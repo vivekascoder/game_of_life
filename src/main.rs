@@ -19,9 +19,11 @@ fn main() {
             }),
             ..default()
         }))
+        .init_resource::<SimulationTimer>()
         .add_startup_system(setup)
         .add_startup_system(spawn_camera)
         .add_system(switch_game_state)
         .add_system(toggle_on_mouse_click)
+        .add_system(simulate)
         .run();
 }

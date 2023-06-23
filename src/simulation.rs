@@ -1,4 +1,6 @@
-use crate::constants::{CELL_SET_COLOR, CELL_UNSET_COLOR, NUMBER_OF_TILES, TILE_SIZE, TOTAL_CELL};
+use crate::constants::{
+    CELL_SET_COLOR, CELL_UNSET_COLOR, NUMBER_OF_TILES, SIMULATION_TICK_TIME, TILE_SIZE, TOTAL_CELL,
+};
 use crate::utils::get_cell_from_position;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
 
@@ -9,10 +11,29 @@ pub struct Tile {
     is_set: bool,
 }
 
-#[derive(Resource, Debug)]
+#[derive(Resource, Debug, PartialEq)]
 pub enum CurrentGameState {
     Playing,
     Paused,
+}
+
+#[derive(Resource, Debug)]
+pub struct SimulationTimer {
+    timer: Timer,
+}
+
+impl SimulationTimer {
+    pub fn new() -> Self {
+        Self {
+            timer: Timer::from_seconds(SIMULATION_TICK_TIME, TimerMode::Repeating),
+        }
+    }
+}
+
+impl Default for SimulationTimer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
@@ -89,7 +110,7 @@ pub fn setup(
                 mesh: meshes
                     .add(shape::Box::new(TILE_SIZE, TILE_SIZE, 0.0).into())
                     .into(),
-                material: materials.add(ColorMaterial::from(Color::WHITE)),
+                material: materials.add(ColorMaterial::from(CELL_UNSET_COLOR)),
                 transform: Transform::from_xyz(row * TILE_SIZE, col * TILE_SIZE, 0.0),
                 ..default()
             },
@@ -99,5 +120,18 @@ pub fn setup(
                 is_set: false,
             },
         ));
+    }
+}
+
+pub fn simulate(
+    mut cells_query: Query<(&mut Handle<ColorMaterial>, &mut Tile)>,
+    mut simulation_timer: ResMut<SimulationTimer>,
+    current_game_state: Res<CurrentGameState>,
+    time: Res<Time>,
+) {
+    if simulation_timer.timer.tick(time.delta()).just_finished()
+        && *current_game_state == CurrentGameState::Playing
+    {
+        info!("Tick");
     }
 }
