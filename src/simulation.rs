@@ -65,7 +65,7 @@ pub fn toggle_on_mouse_click(
 ) {
     match *game_state {
         CurrentGameState::Paused => {
-            if mouse_button.just_pressed(MouseButton::Left) {
+            if mouse_button.pressed(MouseButton::Left) {
                 // Get the mouse cursor
                 if let Some(position) = window_query.single().cursor_position() {
                     info!("Mouse position: {:?}", position);
