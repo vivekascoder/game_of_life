@@ -8,7 +8,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "I am a window!".into(),
+                title: "Game of life".into(),
                 resolution: (TILE_SIZE * NUMBER_OF_TILES, TILE_SIZE * NUMBER_OF_TILES).into(),
                 present_mode: bevy::window::PresentMode::AutoVsync,
                 // Tells wasm to resize the window according to the available canvas
@@ -25,5 +25,6 @@ fn main() {
         .add_system(switch_game_state)
         .add_system(toggle_on_mouse_click)
         .add_system(simulate)
+        .add_system(randomize)
         .run();
 }

@@ -3,6 +3,7 @@ use crate::constants::{
 };
 use crate::utils::get_cell_from_position;
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
+use rand::prelude::*;
 
 #[derive(Component)]
 pub struct Tile {
@@ -69,6 +70,7 @@ pub fn toggle_on_mouse_click(
                 if let Some(position) = window_query.single().cursor_position() {
                     info!("Mouse position: {:?}", position);
                     let (row, col) = get_cell_from_position(position);
+                    info!("Cell: {} {}", row, col);
                     for (mut material, mut tile) in cells_query.iter_mut() {
                         if tile.x == row && tile.y == col {
                             tile.is_set = !tile.is_set;
@@ -76,6 +78,7 @@ pub fn toggle_on_mouse_click(
                                 true => CELL_SET_COLOR,
                                 false => CELL_UNSET_COLOR,
                             }));
+                            info!("Tile is_set: {}", tile.is_set);
                         }
                     }
                 } else {
@@ -95,16 +98,19 @@ pub fn setup(
     // Add state resource
     commands.insert_resource(CurrentGameState::Paused);
     for i in 0..(NUMBER_OF_TILES * NUMBER_OF_TILES) as usize {
-        let mut row = ((i + 1) % NUMBER_OF_TILES as usize) as f32;
-        if i + 1 == TOTAL_CELL as usize {
-            row = 100.0;
-        }
-        let mut col = 1.0;
-        if i + 1 > NUMBER_OF_TILES as usize {
-            col = ((i + 1) as f32 / NUMBER_OF_TILES).ceil();
-        }
+        // let mut row = ((i + 1) % NUMBER_OF_TILES as usize) as f32;
+        // if i + 1 == TOTAL_CELL as usize {
+        //     row = 100.0;
+        // }
+        // let mut col = 1.0;
+        // if i + 1 > NUMBER_OF_TILES as usize {
+        //     col = ((i + 1) as f32 / NUMBER_OF_TILES).ceil();
+        // }
 
-        println!("Row, Col: {}, {}", row, col);
+        let row = (i % NUMBER_OF_TILES as usize) as f32;
+        let col = (i / NUMBER_OF_TILES as usize) as f32;
+
+        info!("Row, Col: {}, {}", row, col);
         commands.spawn((
             MaterialMesh2dBundle {
                 mesh: meshes
@@ -123,15 +129,84 @@ pub fn setup(
     }
 }
 
+pub fn randomize(
+    mut cells_query: Query<(&mut Handle<ColorMaterial>, &mut Tile)>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    current_game_state: Res<CurrentGameState>,
+    key_input: Res<Input<KeyCode>>,
+) {
+    if *current_game_state == CurrentGameState::Paused {
+        if key_input.just_released(KeyCode::R) {
+            for (mut material, mut tile) in cells_query.iter_mut() {
+                tile.is_set = rand::thread_rng().gen_bool(1.0 / 3.0);
+                *material = materials.add(ColorMaterial::from(match tile.is_set {
+                    true => CELL_SET_COLOR,
+                    false => CELL_UNSET_COLOR,
+                }));
+            }
+        }
+    }
+}
+
 pub fn simulate(
     mut cells_query: Query<(&mut Handle<ColorMaterial>, &mut Tile)>,
     mut simulation_timer: ResMut<SimulationTimer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     current_game_state: Res<CurrentGameState>,
     time: Res<Time>,
 ) {
     if simulation_timer.timer.tick(time.delta()).just_finished()
         && *current_game_state == CurrentGameState::Playing
     {
-        info!("Tick");
+        let mut life_grid: Vec<bool> = Vec::new();
+
+        for (_, tile) in cells_query.iter_mut() {
+            life_grid.push(tile.is_set);
+        }
+
+        for (index, (mut material, mut tile)) in cells_query.iter_mut().enumerate() {
+            let mut neighbour_count = 0;
+            let x = index as i32 % NUMBER_OF_TILES as i32;
+            let y = index as i32 / NUMBER_OF_TILES as i32;
+
+            for xi in (x - 1)..(x + 2) {
+                for yi in (y - 1)..(y + 2) {
+                    if (xi != x || yi != y)
+                        && xi >= 0
+                        && xi < NUMBER_OF_TILES as i32
+                        && yi >= 0
+                        && yi < NUMBER_OF_TILES as i32
+                    {
+                        let line_index = xi + yi * NUMBER_OF_TILES as i32;
+                        if life_grid[line_index as usize] == true {
+                            neighbour_count += 1;
+                        }
+                    }
+                }
+            }
+
+            if neighbour_count > 0 {
+                info!("Neighbour count: {}", neighbour_count);
+            }
+
+            if neighbour_count < 2 || neighbour_count > 3 {
+                if tile.is_set {
+                    (*tile).is_set = false;
+                    *material = materials.add(ColorMaterial::from(match tile.is_set {
+                        true => CELL_SET_COLOR,
+                        false => CELL_UNSET_COLOR,
+                    }));
+                }
+            }
+
+            if neighbour_count == 3 {
+                (*tile).is_set = true;
+                println!("S: {}", tile.is_set);
+                *material = materials.add(ColorMaterial::from(match tile.is_set {
+                    true => CELL_SET_COLOR,
+                    false => CELL_UNSET_COLOR,
+                }));
+            }
+        }
     }
 }
