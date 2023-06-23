@@ -98,15 +98,6 @@ pub fn setup(
     // Add state resource
     commands.insert_resource(CurrentGameState::Paused);
     for i in 0..(NUMBER_OF_TILES * NUMBER_OF_TILES) as usize {
-        // let mut row = ((i + 1) % NUMBER_OF_TILES as usize) as f32;
-        // if i + 1 == TOTAL_CELL as usize {
-        //     row = 100.0;
-        // }
-        // let mut col = 1.0;
-        // if i + 1 > NUMBER_OF_TILES as usize {
-        //     col = ((i + 1) as f32 / NUMBER_OF_TILES).ceil();
-        // }
-
         let row = (i % NUMBER_OF_TILES as usize) as f32;
         let col = (i / NUMBER_OF_TILES as usize) as f32;
 
@@ -185,10 +176,6 @@ pub fn simulate(
                 }
             }
 
-            if neighbour_count > 0 {
-                info!("Neighbour count: {}", neighbour_count);
-            }
-
             if neighbour_count < 2 || neighbour_count > 3 {
                 if tile.is_set {
                     (*tile).is_set = false;
@@ -201,7 +188,6 @@ pub fn simulate(
 
             if neighbour_count == 3 {
                 (*tile).is_set = true;
-                println!("S: {}", tile.is_set);
                 *material = materials.add(ColorMaterial::from(match tile.is_set {
                     true => CELL_SET_COLOR,
                     false => CELL_UNSET_COLOR,
