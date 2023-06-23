@@ -1,5 +1,8 @@
 use bevy::{log, prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
-use game_of_life::utils::{self, get_cell_from_position, NUMBER_OF_TILES, TILE_SIZE, TOTAL_CELL};
+use game_of_life::utils::{
+    self, get_cell_from_position, CELL_SET_COLOR, CELL_UNSET_COLOR, NUMBER_OF_TILES, TILE_SIZE,
+    TOTAL_CELL,
+};
 
 fn main() {
     App::new()
@@ -72,7 +75,10 @@ pub fn toggle_on_mouse_click(
                     for (mut material, mut tile) in cells_query.iter_mut() {
                         if tile.x == row && tile.y == col {
                             tile.is_set = !tile.is_set;
-                            *material = materials.add(ColorMaterial::from(Color::RED));
+                            *material = materials.add(ColorMaterial::from(match tile.is_set {
+                                true => CELL_SET_COLOR,
+                                false => CELL_UNSET_COLOR,
+                            }));
                         }
                     }
                 } else {
